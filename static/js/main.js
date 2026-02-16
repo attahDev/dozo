@@ -1,21 +1,17 @@
-/* ═══════════════════════════════════════════
-   DOZO — Main JavaScript
-   Global interactions, animations, utilities
-═══════════════════════════════════════════ */
-
 (() => {
   'use strict';
 
   // ── Nav scroll effect ──────────────────────
   const nav = document.getElementById('nav');
   if (nav) {
-    window.addEventListener('scroll', () => {
+    const onScroll = () => {
       nav.classList.toggle('scrolled', window.scrollY > 20);
-    }, { passive: true });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
   }
 
   // ── Mobile menu ────────────────────────────
-  const navToggle  = document.getElementById('navToggle');
+  const navToggle = document.getElementById('navToggle');
   const mobileMenu = document.getElementById('mobileMenu');
   if (navToggle && mobileMenu) {
     navToggle.addEventListener('click', () => {
@@ -33,14 +29,15 @@
     });
   }
 
-  // ── Scroll reveal (IntersectionObserver) ───
-  // FIX: Use ONE shared observer instead of one per element — dramatically cheaper
+  // ── Scroll reveal — single shared observer ─
+  // Fires AFTER the CSS pageIn animation completes (0.25s), so reveals
+  // feel like a second layer of life rather than competing with the fade.
   const revealEls = document.querySelectorAll('[data-reveal]');
   if (revealEls.length) {
     const revealObs = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
-          const delay = entry.target.dataset.revealDelay || 0;
+          const delay = parseFloat(entry.target.dataset.revealDelay || 0);
           setTimeout(() => entry.target.classList.add('revealed'), delay * 1000);
           revealObs.unobserve(entry.target);
         }
@@ -49,36 +46,43 @@
     revealEls.forEach(el => revealObs.observe(el));
   }
 
-  // ── Feature cards reveal — ONE shared observer ─
-  // FIX: Was creating a new IntersectionObserver per card; now a single observer handles all
+  // ── Feature / stat card animations — single shared observer ─
+  // Cards start hidden via inline style, then animate in with a stagger
+  // when they scroll into view. One observer handles all cards.
   const cardEls = document.querySelectorAll('.feature-card, .stat-card');
   if (cardEls.length) {
-    cardEls.forEach((card, i) => {
-      card.style.opacity   = '0';
-      card.style.transform = 'translateY(20px)';
+    // Set initial hidden state
+    cardEls.forEach(card => {
+      card.style.opacity = '0';
+      card.style.transform = 'translateY(24px)';
+      card.style.transition = 'none'; // prevent flash on set
     });
+
     const cardObs = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           const i = [...cardEls].indexOf(entry.target);
+          // Stagger each card by 80ms, offset after CSS pageIn (250ms)
           setTimeout(() => {
-            entry.target.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+            entry.target.style.transition = 'opacity 0.45s ease, transform 0.45s ease';
             entry.target.style.opacity    = '1';
             entry.target.style.transform  = 'translateY(0)';
-          }, i * 80);
+          }, 250 + i * 80);
           cardObs.unobserve(entry.target);
         }
       });
     }, { threshold: 0.1 });
+
     cardEls.forEach(card => cardObs.observe(card));
   }
 
   // ── Flash auto-dismiss ─────────────────────
-  document.querySelectorAll('.flash').forEach((flash, i) => {
+  const flashes = document.querySelectorAll('.flash');
+  flashes.forEach((flash, i) => {
     setTimeout(() => {
       flash.style.transition = 'all 0.4s ease';
-      flash.style.opacity    = '0';
-      flash.style.transform  = 'translateX(20px)';
+      flash.style.opacity = '0';
+      flash.style.transform = 'translateX(20px)';
       setTimeout(() => flash.remove(), 400);
     }, 4000 + i * 500);
   });
@@ -89,12 +93,20 @@
   if (savedTheme)  document.body.dataset.theme = savedTheme;
   if (savedAccent) document.documentElement.style.setProperty('--accent', savedAccent);
 
+  // ── Load appearance preferences ─────────────
+  if (localStorage.getItem('compact_view') === 'true') {
+    document.body.classList.add('compact-view');
+  }
+  if (localStorage.getItem('animations') === 'false') {
+    document.body.classList.add('no-animations');
+  }
+
   // ── Smooth active nav link on load ─────────
   document.querySelectorAll('.nav-link').forEach(link => {
     if (link.href === window.location.href) link.classList.add('active');
   });
 
-  // ── Add task form expand on outside click ──
+  // ── Add task form expand ───────────────────
   const addInput  = document.getElementById('addInput');
   const addExtras = document.getElementById('addExtras');
   if (addInput) {
@@ -134,45 +146,52 @@
     hint.className = 'kb-hint';
     hint.textContent = 'Press N';
     hint.style.cssText = `
-      position: absolute; right: 12px; top: 50%;
+      position: absolute;
+      right: 12px;
+      top: 50%;
       transform: translateY(-50%);
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.65rem; color: var(--text-3);
-      pointer-events: none; transition: opacity 0.2s; opacity: 0.6;
+      font-size: 0.65rem;
+      color: var(--text-3);
+      pointer-events: none;
+      transition: opacity 0.2s;
+      opacity: 0.6;
     `;
     addInput.parentElement.style.position = 'relative';
     addInput.parentElement.appendChild(hint);
-    addInput.addEventListener('focus', () => (hint.style.opacity = '0'));
-    addInput.addEventListener('blur',  () => (hint.style.opacity = '0.6'));
+    addInput.addEventListener('focus', () => hint.style.opacity = '0');
+    addInput.addEventListener('blur',  () => hint.style.opacity = '0.6');
   }
 
-  // ── Button click ripple effect ─────────────
-  // Inject the keyframe once
+  // ── Button ripple (event delegation) ──────
   if (!document.getElementById('rippleStyle')) {
     const style = document.createElement('style');
     style.id = 'rippleStyle';
     style.textContent = '@keyframes rippleAnim { to { transform: scale(2.5); opacity: 0; } }';
     document.head.appendChild(style);
   }
-  document.querySelectorAll('.btn').forEach(btn => {
-    btn.style.position = 'relative';
+  document.body.addEventListener('click', function(e) {
+    const btn = e.target.closest('.btn');
+    if (!btn) return;
+    const ripple = document.createElement('span');
+    const rect   = btn.getBoundingClientRect();
+    const size   = Math.max(rect.width, rect.height);
+    ripple.style.cssText = `
+      position: absolute;
+      width: ${size}px;
+      height: ${size}px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      left: ${e.clientX - rect.left - size/2}px;
+      top: ${e.clientY - rect.top - size/2}px;
+      transform: scale(0);
+      animation: rippleAnim 0.5s ease-out forwards;
+      pointer-events: none;
+    `;
+    btn.style.position = btn.style.position || 'relative';
     btn.style.overflow = 'hidden';
-    btn.addEventListener('click', function(e) {
-      const ripple = document.createElement('span');
-      const rect   = btn.getBoundingClientRect();
-      const size   = Math.max(rect.width, rect.height);
-      ripple.style.cssText = `
-        position: absolute; width: ${size}px; height: ${size}px;
-        border-radius: 50%; background: rgba(255,255,255,0.15);
-        left: ${e.clientX - rect.left - size / 2}px;
-        top: ${e.clientY - rect.top  - size / 2}px;
-        transform: scale(0);
-        animation: rippleAnim 0.5s ease-out forwards;
-        pointer-events: none;
-      `;
-      btn.appendChild(ripple);
-      setTimeout(() => ripple.remove(), 500);
-    });
+    btn.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 500);
   });
 
   // ── Sidebar active state highlighting ─────
@@ -181,39 +200,63 @@
     if (link.dataset.href === currentPath) link.classList.add('active');
   });
 
-  // ── Page transition on nav links ──────────
-  // Only intercepts plain GET navigation links — not forms, anchors, or
-  // links with data-no-transition. Sets a sessionStorage flag so the
-  // fade-in only plays after a real navigation, NOT on a hard refresh.
-  document.querySelectorAll('a[href]').forEach(link => {
-    if (
-      link.hostname === window.location.hostname &&
-      !link.href.includes('#') &&
-      !link.target &&
-      !link.closest('form') &&
-      link.dataset.noTransition === undefined
-    ) {
-      link.addEventListener('click', e => {
-        if (e.ctrlKey || e.metaKey || e.shiftKey) return;
-        e.preventDefault();
-        sessionStorage.setItem('navigating', '1');
-        document.body.style.transition = 'opacity 0.15s ease';
-        document.body.style.opacity = '0';
-        setTimeout(() => { window.location.href = link.href; }, 150);
-      });
-    }
-  });
+  // ── Stat counters — smooth count-up animation ──
+  // Targets any element with data-count="NUMBER".
+  // Counts from 0 to the target over 1.2s using easeOutQuart,
+  // starting after the CSS pageIn completes (250ms offset).
+  // Example usage in HTML: <span data-count="128">128</span>
+  function easeOutQuart(t) {
+    return 1 - Math.pow(1 - t, 4);
+  }
 
-  // ── Fade-in on page load ───────────────────
-  // Only fade in when arriving via a link click, not on a hard refresh.
-  if (sessionStorage.getItem('navigating')) {
-    sessionStorage.removeItem('navigating');
-    document.body.style.opacity    = '0';
-    document.body.style.transition = 'opacity 0.2s ease';
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        document.body.style.opacity = '1';
+  function animateCounter(el) {
+    const target   = parseFloat(el.dataset.count);
+    const decimals = (el.dataset.count.includes('.')) ? el.dataset.count.split('.')[1].length : 0;
+    const prefix   = el.dataset.countPrefix || '';
+    const suffix   = el.dataset.countSuffix || '';
+    const duration = 1200; // ms
+    const start    = performance.now();
+
+    function tick(now) {
+      const elapsed  = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const value    = easeOutQuart(progress) * target;
+      el.textContent = prefix + value.toFixed(decimals) + suffix;
+      if (progress < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  const counterEls = document.querySelectorAll('[data-count]');
+  if (counterEls.length) {
+    const counterObs = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          // Offset by 250ms to start after CSS pageIn finishes
+          setTimeout(() => animateCounter(entry.target), 250);
+          counterObs.unobserve(entry.target);
+        }
       });
+    }, { threshold: 0.5 });
+    counterEls.forEach(el => counterObs.observe(el));
+  }
+
+  // ── Login / auth form field animation ─────
+  // Staggers auth form fields in one by one after page load.
+  // Targets .auth-form .form-group elements.
+  // Works on login, register, and settings pages automatically.
+  const authFields = document.querySelectorAll('.auth-form .form-group');
+  if (authFields.length) {
+    authFields.forEach((field, i) => {
+      field.style.opacity   = '0';
+      field.style.transform = 'translateY(16px)';
+      field.style.transition = 'none';
+      // Stagger after CSS pageIn (250ms) + 80ms per field
+      setTimeout(() => {
+        field.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+        field.style.opacity    = '1';
+        field.style.transform  = 'translateY(0)';
+      }, 250 + i * 80);
     });
   }
 
