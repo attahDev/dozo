@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+{% block title %}Tasks — DOZO{% endblock %}
+
+{% block content %}
+
+<div class="todos-wrapper">
+
+  <!-- Sidebar -->
+  <aside class="todos-sidebar" id="sidebar">
+    <div class="sidebar-user">
+      <div class="user-avatar">{{ current_user.username[0]|upper }}</div>
+      <div class="user-info">
+        <span class="user-name">{{ current_user.username }}</span>
+        <span class="user-handle">@{{ current_user.email.split('@')[0] }}</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <button class="sidebar-link active" data-filter="all">
+        <span class="sl-icon">◈</span>
+        <span class="sl-text">All Tasks</span>
+        <span class="sl-count" id="count-all">{{ todos|length }}</span>
+      </button>
+      <button class="sidebar-link" data-filter="active">
+        <span class="sl-icon">○</span>
+        <span class="sl-text">Active</span>
+        <span class="sl-count" id="count-active">{{ todos|selectattr('completed', 'equalto', false)|list|length }}</span>
+      </button>
+      <button class="sidebar-link" data-filter="completed">
+        <span class="sl-icon">◉</span>
+        <span class="sl-text">Completed</span>
+        <span class="sl-count" id="count-done">{{ todos|selectattr('completed', 'equalto', true)|list|length }}</span>
+      </button>
+      <button class="sidebar-link" data-filter="high">
+        <span class="sl-icon">▲</span>
+        <span class="sl-text">High Priority</span>
+        <span class="sl-count" id="count-high">{{ todos|selectattr('priority', 'equalto', 'high')|list|length }}</span>
+      </button>
+      <button class="sidebar-link" data-filter="overdue">
+        <span class="sl-icon">⚠</span>
+        <span class="sl-text">Overdue</span>
+        <span class="sl-count sl-count-warn" id="count-overdue">0</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="sidebar-progress">
+      <div class="progress-header">
+        <span>Today's progress</span>
+        <span class="progress-pct" id="progressPct">0%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <div class="todos-main">
+
+    <!-- Top bar -->
+    <div class="todos-topbar">
+      <div class="topbar-left">
+        <button class="sidebar-toggle-btn" id="sidebarToggle">☰</button>
+        <div class="topbar-title">
+          <h1 id="viewTitle">All Tasks</h1>
+          <span class="topbar-date">{{ moment().format('dddd, MMMM D') if moment else '' }}</span>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="search-wrap">
+          <span class="search-icon">⌕</span>
+          <input class="search-input" id="searchInput" type="text" placeholder="Search tasks…" />
+        </div>
+        <div class="sort-wrap">
+          <select class="sort-select" id="sortSelect">
+            <option value="date">Newest</option>
+            <option value="priority">Priority</option>
+            <option value="alpha">A → Z</option>
+            <option value="due">Due Date</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add task bar -->
+    <div class="add-task-bar" id="addTaskBar">
+      <form method="POST" action="{{ url_for('todos.add') }}" id="addTaskForm">
+        {{ form.hidden_tag() }}
+        <div class="add-task-inner">
+          <span class="add-icon">+</span>
+          <input
+            class="add-input"
+            name="title"
+            id="addInput"
+            type="text"
+            placeholder="Add a task… (press Enter or Tab for options)"
+            autocomplete="off"
+            required
+          />
+          <div class="add-extras" id="addExtras">
+            <select name="priority" class="add-select" title="Priority">
+              <option value="normal">● Normal</option>
+              <option value="high">▲ High</option>
+              <option value="low">▼ Low</option>
+            </select>
+            <input name="due_date" class="add-date" type="date" title="Due date" />
+            <button type="submit" class="add-submit">Add Task</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Tasks list -->
+    <div class="tasks-container" id="tasksContainer">
+      {% if todos %}
+        {% for todo in todos %}
+        <div class="task-item {% if todo.completed %}task-done{% endif %} priority-{{ todo.priority or 'normal' }}"
+             data-id="{{ todo.id }}"
+             data-priority="{{ todo.priority or 'normal' }}"
+             data-completed="{{ 'true' if todo.completed else 'false' }}"
+             data-due="{{ todo.due_date.isoformat() if todo.due_date else '' }}"
+             data-title="{{ todo.title|lower }}"
+             style="--idx: {{ loop.index0 }}">
+
+          <div class="task-check-wrap">
+            <form method="POST" action="{{ url_for('todos.toggle', id=todo.id) }}" class="inline-form">
+              {{ form.hidden_tag() }}
+              <button type="submit" class="task-check {% if todo.completed %}checked{% endif %}" aria-label="Toggle complete">
+                {% if todo.completed %}<span>✓</span>{% endif %}
+              </button>
+            </form>
+          </div>
+
+          <div class="task-body">
+            <span class="task-title">{{ todo.title }}</span>
+            <div class="task-meta">
+              {% if todo.due_date %}
+              <span class="task-due {% if todo.due_date < today %}overdue{% endif %}">
+                {{ '⚠ ' if todo.due_date < today else '◷ ' }}{{ todo.due_date.strftime('%b %d') }}
+              </span>
+              {% endif %}
+              {% if todo.priority == 'high' %}
+              <span class="task-priority-badge priority-high">▲ High</span>
+              {% elif todo.priority == 'low' %}
+              <span class="task-priority-badge priority-low">▼ Low</span>
+              {% endif %}
+              <span class="task-created">{{ todo.created_at.strftime('%b %d') if todo.created_at else '' }}</span>
+            </div>
+          </div>
+
+          <div class="task-actions">
+            <button class="task-action-btn task-edit-btn" title="Edit" data-id="{{ todo.id }}" data-title="{{ todo.title }}">✎</button>
+            <form method="POST" action="{{ url_for('todos.delete', id=todo.id) }}" class="inline-form">
+              {{ form.hidden_tag() }}
+              <button type="submit" class="task-action-btn task-delete-btn" title="Delete">✕</button>
+            </form>
+          </div>
+
+          <div class="task-priority-bar"></div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="tasks-empty" id="emptyState">
+          <div class="empty-icon">◎</div>
+          <h3>Clean slate.</h3>
+          <p>Add your first task above to get started.</p>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Bulk actions footer -->
+    <div class="bulk-bar" id="bulkBar" style="display: none;">
+      <span class="bulk-count" id="bulkCount">0 selected</span>
+      <div class="bulk-actions">
+        <button class="bulk-btn" id="bulkComplete">Mark Complete</button>
+        <button class="bulk-btn bulk-btn-danger" id="bulkDelete">Delete</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Edit modal -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Edit Task</h3>
+      <button class="modal-close" id="modalClose">✕</button>
+    </div>
+    <form method="POST" action="" id="editForm">
+      {{ form.hidden_tag() }}
+      <div class="form-group">
+        <label class="form-label">Task Title</label>
+        <input class="form-input" name="title" id="editTitle" type="text" required />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Priority</label>
+          <select class="form-input" name="priority" id="editPriority">
+            <option value="low">▼ Low</option>
+            <option value="normal">● Normal</option>
+            <option value="high">▲ High</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Due Date</label>
+          <input class="form-input" name="due_date" id="editDueDate" type="date" />
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-full">Save Changes</button>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // ── Filter ──────────────────────────────
+  const today = new Date().toISOString().split('T')[0];
+  const tasks = document.querySelectorAll('.task-item');
+
+  document.querySelectorAll('.sidebar-link').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.sidebar-link').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const f = btn.dataset.filter;
+      document.getElementById('viewTitle').textContent = btn.querySelector('.sl-text').textContent;
+
+      tasks.forEach(task => {
+        let show = true;
+        if (f === 'active') show = task.dataset.completed === 'false';
+        else if (f === 'completed') show = task.dataset.completed === 'true';
+        else if (f === 'high') show = task.dataset.priority === 'high';
+        else if (f === 'overdue') show = task.dataset.due && task.dataset.due < today && task.dataset.completed === 'false';
+        task.style.display = show ? '' : 'none';
+        if (show) task.classList.add('filter-reveal');
+        else task.classList.remove('filter-reveal');
+      });
+    });
+  });
+
+  // ── Search ──────────────────────────────
+  document.getElementById('searchInput').addEventListener('input', e => {
+    const q = e.target.value.toLowerCase();
+    tasks.forEach(task => {
+      task.style.display = task.dataset.title.includes(q) ? '' : 'none';
+    });
+  });
+
+  // ── Sort ────────────────────────────────
+  document.getElementById('sortSelect').addEventListener('change', e => {
+    const container = document.getElementById('tasksContainer');
+    const items = [...container.querySelectorAll('.task-item')];
+    const priority = { high: 0, normal: 1, low: 2 };
+    items.sort((a, b) => {
+      if (e.target.value === 'priority') return priority[a.dataset.priority] - priority[b.dataset.priority];
+      if (e.target.value === 'alpha') return a.dataset.title.localeCompare(b.dataset.title);
+      if (e.target.value === 'due') return (a.dataset.due || '9') < (b.dataset.due || '9') ? -1 : 1;
+      return 0;
+    });
+    items.forEach(item => container.appendChild(item));
+  });
+
+  // ── Progress bar ────────────────────────
+  function updateProgress() {
+    const all = [...tasks];
+    const done = all.filter(t => t.dataset.completed === 'true').length;
+    const pct = all.length ? Math.round((done / all.length) * 100) : 0;
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressPct').textContent = pct + '%';
+  }
+  updateProgress();
+
+  // ── Overdue count ───────────────────────
+  const overdueCount = [...tasks].filter(t => t.dataset.due && t.dataset.due < today && t.dataset.completed === 'false').length;
+  document.getElementById('count-overdue').textContent = overdueCount;
+
+  // ── Add task expand ─────────────────────
+  document.getElementById('addInput').addEventListener('focus', () => {
+    document.getElementById('addExtras').classList.add('visible');
+  });
+
+  // ── Edit modal ──────────────────────────
+  document.querySelectorAll('.task-edit-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('editTitle').value = btn.dataset.title;
+      document.getElementById('editForm').action = `/todos/${btn.dataset.id}/edit`;
+      document.getElementById('editModal').classList.add('open');
+    });
+  });
+
+  document.getElementById('modalClose').addEventListener('click', () => {
+    document.getElementById('editModal').classList.remove('open');
+  });
+
+  document.getElementById('editModal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) e.currentTarget.classList.remove('open');
+  });
+
+  // ── Sidebar toggle mobile ────────────────
+  document.getElementById('sidebarToggle').addEventListener('click', () => {
+    document.getElementById('sidebar').classList.toggle('open');
+  });
+
+  // ── Delete confirmation ─────────────────
+  document.querySelectorAll('.task-delete-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      if (!confirm('Delete this task?')) e.preventDefault();
+    });
+  });
+</script>
+{% endblock %}

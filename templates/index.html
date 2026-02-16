@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}DOZO — Get It Done{% endblock %}
+
+{% block content %}
+
+<section class="hero">
+  <div class="hero-eyebrow">
+    <span class="eyebrow-line"></span>
+    <span class="eyebrow-text">Productivity, Reimagined</span>
+  </div>
+
+  <h1 class="hero-title">
+    <span class="title-line" data-text="STOP">STOP</span>
+    <span class="title-line title-line-accent" data-text="FORGETTING.">FORGETTING.</span>
+    <span class="title-line title-line-sub">Start doing.</span>
+  </h1>
+
+  <p class="hero-desc">
+    A task manager that respects your time. No bloat, no noise —
+    just a clean space to capture, organize, and <em>finish</em> what matters.
+  </p>
+
+  <div class="hero-actions">
+    {% if current_user.is_authenticated %}
+    <a href="{{ url_for('todos.index') }}" class="btn btn-primary">
+      <span>Go to Tasks</span>
+      <span class="btn-icon">→</span>
+    </a>
+    {% else %}
+    <a href="{{ url_for('auth.login') }}" class="btn btn-primary">
+      <span>Start for Free</span>
+      <span class="btn-icon">→</span>
+    </a>
+    {% endif %}
+    <div class="hero-badge">
+      <span class="badge-pulse"></span>
+      No credit card required
+    </div>
+  </div>
+
+  <!-- Floating stat cards -->
+  <div class="hero-stats">
+    <div class="stat-card" style="--delay: 0s">
+      <span class="stat-num" data-count="2400">0</span>
+      <span class="stat-label">Tasks completed today</span>
+    </div>
+    <div class="stat-card" style="--delay: 0.15s">
+      <span class="stat-num" data-count="98">0</span><span class="stat-suffix">%</span>
+      <span class="stat-label">User satisfaction</span>
+    </div>
+    <div class="stat-card" style="--delay: 0.3s">
+      <span class="stat-num" data-count="12">0</span><span class="stat-suffix">x</span>
+      <span class="stat-label">More productive</span>
+    </div>
+  </div>
+</section>
+
+<!-- Features section -->
+<section class="features">
+  <div class="section-header">
+    <span class="section-tag">Features</span>
+    <h2 class="section-title">Everything you need. <br><em>Nothing you don't.</em></h2>
+  </div>
+
+  <div class="features-grid">
+    <div class="feature-card" data-index="0">
+      <div class="feature-icon">◈</div>
+      <h3>Smart Priorities</h3>
+      <p>Flag tasks by urgency. Visual hierarchy keeps your most important work front and center.</p>
+      <span class="feature-tag">Priority Levels</span>
+    </div>
+    <div class="feature-card" data-index="1">
+      <div class="feature-icon">⊕</div>
+      <h3>Instant Capture</h3>
+      <p>Add tasks in under 2 seconds. Keyboard-first design built for people who think fast.</p>
+      <span class="feature-tag">Speed</span>
+    </div>
+    <div class="feature-card" data-index="2">
+      <div class="feature-icon">◎</div>
+      <h3>Due Date Tracking</h3>
+      <p>Never miss a deadline. Smart reminders surface what's overdue before you even look.</p>
+      <span class="feature-tag">Deadlines</span>
+    </div>
+    <div class="feature-card" data-index="3">
+      <div class="feature-icon">⟁</div>
+      <h3>Your data, always yours</h3>
+      <p>PostgreSQL-backed, securely stored. No third-party trackers, no ads, no selling your data.</p>
+      <span class="feature-tag">Privacy First</span>
+    </div>
+  </div>
+</section>
+
+<!-- CTA Section -->
+<section class="cta-section">
+  <div class="cta-inner">
+    <span class="cta-label">Ready?</span>
+    <h2 class="cta-title">Your to-do list <br>is waiting.</h2>
+    {% if current_user.is_authenticated %}
+    <a href="{{ url_for('todos.index') }}" class="btn btn-primary btn-lg">Open Tasks →</a>
+    {% else %}
+    <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg">Get Started →</a>
+    {% endif %}
+  </div>
+  <div class="cta-deco">
+    <div class="deco-ring deco-ring-1"></div>
+    <div class="deco-ring deco-ring-2"></div>
+    <div class="deco-ring deco-ring-3"></div>
+  </div>
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Animated counter
+  document.querySelectorAll('.stat-num').forEach(el => {
+    const target = parseInt(el.dataset.count);
+    let start = null;
+    const duration = 2000;
+    const obs = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting) {
+        const step = (ts) => {
+          if (!start) start = ts;
+          const progress = Math.min((ts - start) / duration, 1);
+          el.textContent = Math.floor(progress * target).toLocaleString();
+          if (progress < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+        obs.disconnect();
+      }
+    });
+    obs.observe(el);
+  });
+</script>
+{% endblock %}

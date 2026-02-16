@@ -1,0 +1,431 @@
+{% extends "base.html" %}
+{% block title %}Settings — DOZO{% endblock %}
+
+{% block content %}
+
+<div class="settings-wrapper">
+
+  <div class="settings-header">
+    <div class="sh-eyebrow">
+      <span class="eyebrow-line"></span>
+      <span>Settings</span>
+    </div>
+    <h1 class="settings-title">Your Workspace</h1>
+    <p class="settings-sub">Manage your account, preferences, and data.</p>
+  </div>
+
+  <div class="settings-layout">
+
+    <!-- Settings nav tabs -->
+    <nav class="settings-tabs" id="settingsTabs">
+      <button class="stab active" data-tab="profile">
+        <span class="stab-icon">◉</span> Profile
+      </button>
+      <button class="stab" data-tab="appearance">
+        <span class="stab-icon">◈</span> Appearance
+      </button>
+      <button class="stab" data-tab="notifications">
+        <span class="stab-icon">◎</span> Notifications
+      </button>
+      <button class="stab" data-tab="security">
+        <span class="stab-icon">⊕</span> Security
+      </button>
+      <button class="stab stab-danger" data-tab="danger">
+        <span class="stab-icon">⚠</span> Danger Zone
+      </button>
+    </nav>
+
+    <!-- Panel: Profile -->
+    <div class="settings-panel active" id="tab-profile">
+      <div class="panel-header">
+        <h2>Profile Information</h2>
+        <p>Update your name, email, and avatar.</p>
+      </div>
+
+      <div class="avatar-section">
+        <div class="avatar-display" id="avatarDisplay">
+          {{ current_user.username[0]|upper }}
+        </div>
+        <div class="avatar-info">
+          <button class="btn btn-secondary btn-sm">Change Avatar</button>
+          <span class="avatar-hint">JPG, PNG up to 2MB</span>
+        </div>
+      </div>
+
+      <form method="POST" action="{{ url_for('auth.settings') }}" class="settings-form">
+        {{ pf.hidden_tag() }}
+        <input type="hidden" name="action" value="profile" />
+
+        <div class="settings-row">
+          <div class="form-group">
+            <label class="form-label">Username</label>
+            <div class="input-wrap">
+              <input class="form-input" name="username" type="text" value="{{ current_user.username }}" />
+              <span class="input-focus-bar"></span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <div class="input-wrap">
+              <input class="form-input" name="email" type="email" value="{{ current_user.email }}" />
+              <span class="input-focus-bar"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Bio <span class="optional">(optional)</span></label>
+          <div class="input-wrap">
+            <textarea class="form-input form-textarea" name="bio" placeholder="A short note about yourself…">{{ current_user.bio if current_user.bio else '' }}</textarea>
+            <span class="input-focus-bar"></span>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">
+          Save Changes <span class="btn-icon">→</span>
+        </button>
+      </form>
+    </div>
+
+  <!-- Panel: Appearance -->
+  <div class="settings-panel" id="tab-appearance">
+    <div class="panel-header">
+      <h2>Appearance</h2>
+      <p>Customize how DOZO looks for you.</p>
+    </div>
+
+    <form method="POST" action="{{ url_for('auth.settings') }}" class="settings-form">
+      {{ pf.hidden_tag() }}
+      <input type="hidden" name="action" value="appearance" />
+      <input type="hidden" name="theme" id="selectedTheme" value="dark" />
+      <input type="hidden" name="accent" id="selectedAccent" value="#f59e0b" />
+
+      <div class="settings-block">
+        <label class="settings-block-label">Theme</label>
+        <div class="theme-picker">
+          <button type="button" class="theme-opt active" data-theme="dark">
+            <div class="theme-preview dark-preview"></div>
+            <span>Dark</span>
+          </button>
+          <button type="button" class="theme-opt" data-theme="light">
+            <div class="theme-preview light-preview"></div>
+            <span>Light</span>
+          </button>
+          <button type="button" class="theme-opt" data-theme="midnight">
+            <div class="theme-preview midnight-preview"></div>
+            <span>Midnight</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="settings-block">
+        <label class="settings-block-label">Accent Color</label>
+        <div class="accent-picker">
+          {% for color in ['#f59e0b', '#10b981', '#6366f1', '#ef4444', '#ec4899', '#06b6d4'] %}
+          <button type="button" class="accent-opt {% if loop.first %}active{% endif %}" style="--c: {{ color }};" data-color="{{ color }}"></button>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="settings-block">
+        <div class="toggle-row">
+          <div>
+            <span class="toggle-label">Compact View</span>
+            <span class="toggle-hint">Show more tasks per screen</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" name="compact_view" id="compactToggle" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="toggle-row">
+          <div>
+            <span class="toggle-label">Show Completed Tasks</span>
+            <span class="toggle-hint">Keep finished tasks visible</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" name="show_completed" id="completedToggle" checked />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="toggle-row">
+          <div>
+            <span class="toggle-label">Animations</span>
+            <span class="toggle-hint">Motion and transitions</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" name="animations" id="animToggle" checked />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary">
+        Save Appearance <span class="btn-icon">→</span>
+      </button>
+    </form>
+  </div>
+
+    <!-- Panel: Notifications -->
+    <div class="settings-panel" id="tab-notifications">
+      <div class="panel-header">
+        <h2>Notifications</h2>
+        <p>Control when and how you get reminded.</p>
+      </div>
+
+      <div class="settings-block">
+        <div class="toggle-row">
+          <div>
+            <span class="toggle-label">Due Date Reminders</span>
+            <span class="toggle-hint">Notify before tasks are due</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" checked />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="toggle-row">
+          <div>
+            <span class="toggle-label">Daily Digest</span>
+            <span class="toggle-hint">Summary of your tasks each morning</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="toggle-row">
+          <div>
+            <span class="toggle-label">Overdue Alerts</span>
+            <span class="toggle-hint">Get notified when tasks go past due</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" checked />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-top: 1.5rem">
+        <label class="form-label">Remind me at</label>
+        <div class="input-wrap" style="max-width: 200px">
+          <input class="form-input" type="time" value="09:00" />
+          <span class="input-focus-bar"></span>
+        </div>
+      </div>
+
+      <button class="btn btn-primary">Save Preferences <span class="btn-icon">→</span></button>
+    </div>
+
+    <!-- Panel: Security -->
+    <div class="settings-panel" id="tab-security">
+      <div class="panel-header">
+        <h2>Security</h2>
+        <p>Keep your account safe.</p>
+      </div>
+
+      <form method="POST" action="{{ url_for('auth.settings') }}" class="settings-form">
+        {{ pwf.hidden_tag() }}
+        <input type="hidden" name="action" value="password" />
+
+        <div class="form-group">
+          <label class="form-label">Current Password</label>
+          <div class="input-wrap">
+            <input class="form-input" name="current_password" type="password" placeholder="••••••••" />
+            <span class="input-focus-bar"></span>
+          </div>
+        </div>
+        <div class="settings-row">
+          <div class="form-group">
+            <label class="form-label">New Password</label>
+            <div class="input-wrap">
+              <input class="form-input" name="new_password" type="password" placeholder="••••••••" id="newPw" />
+              <span class="input-focus-bar"></span>
+            </div>
+            <div class="pw-strength" id="pwStrength">
+              <div class="pw-bar"><div class="pw-fill" id="pwFill"></div></div>
+              <span class="pw-label" id="pwLabel">Enter a password</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Confirm Password</label>
+            <div class="input-wrap">
+              <input class="form-input" name="confirm_password" type="password" placeholder="••••••••" />
+              <span class="input-focus-bar"></span>
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">
+          Update Password <span class="btn-icon">→</span>
+        </button>
+      </form>
+
+      <div class="settings-divider"></div>
+
+      <div class="settings-block">
+        <h3 class="block-title">Active Sessions</h3>
+        <div class="session-card">
+          <div class="session-icon">💻</div>
+          <div class="session-info">
+            <span class="session-device">This device</span>
+            <span class="session-detail">{{ request.user_agent.platform if request.user_agent else 'Unknown' }} · Now</span>
+          </div>
+          <span class="session-badge">Current</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel: Danger Zone -->
+    <div class="settings-panel" id="tab-danger">
+      <div class="panel-header">
+        <h2>Danger Zone</h2>
+        <p>These actions are permanent and cannot be undone.</p>
+      </div>
+
+      <div class="danger-card">
+        <div class="danger-info">
+          <h4>Clear all completed tasks</h4>
+          <p>Remove all finished tasks from your list.</p>
+        </div>
+        <button class="btn btn-secondary" id="clearCompletedBtn">Clear Completed</button>
+      </div>
+
+      <div class="danger-card danger-card-red">
+        <div class="danger-info">
+          <h4>Delete account</h4>
+          <p>Permanently remove your account and all associated data.</p>
+        </div>
+        <button class="btn btn-danger" id="deleteAccountBtn">Delete Account</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // ── Load saved preferences on page load ─────
+  let selectedTheme = localStorage.getItem('theme') || 'dark';
+  let selectedAccent = localStorage.getItem('accent') || '#f59e0b';
+
+  // Set theme
+  document.body.dataset.theme = selectedTheme;
+  document.querySelector(`.theme-opt[data-theme="${selectedTheme}"]`)?.classList.remove('active');
+  document.querySelector(`.theme-opt[data-theme="${selectedTheme}"]`)?.classList.add('active');
+  if (document.getElementById('selectedTheme')) {
+    document.getElementById('selectedTheme').value = selectedTheme;
+  }
+  
+  // Set accent
+  document.documentElement.style.setProperty('--accent', selectedAccent);
+  document.querySelectorAll('.accent-opt').forEach(opt => opt.classList.remove('active'));
+  document.querySelector(`.accent-opt[data-color="${selectedAccent}"]`)?.classList.add('active');
+  if (document.getElementById('selectedAccent')) {
+    document.getElementById('selectedAccent').value = selectedAccent;
+  }
+  
+  // Load other appearance preferences
+  if (localStorage.getItem('compact_view') === 'true') {
+    document.getElementById('compactToggle').checked = true;
+    document.body.classList.add('compact-view');
+  }
+  if (localStorage.getItem('show_completed') === 'false') {
+    document.getElementById('completedToggle').checked = false;
+  }
+  if (localStorage.getItem('animations') === 'false') {
+    document.getElementById('animToggle').checked = false;
+    document.body.classList.add('no-animations');
+  }
+
+  // ── Tab switching ──────────────────────────
+  document.querySelectorAll('.stab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.stab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(`tab-${tab.dataset.tab}`).classList.add('active');
+    });
+  });
+
+  // ── Theme picker ───────────────────────────
+  document.querySelectorAll('.theme-opt').forEach(opt => {
+    opt.addEventListener('click', () => {
+      document.querySelectorAll('.theme-opt').forEach(o => o.classList.remove('active'));
+      opt.classList.add('active');
+      selectedTheme = opt.dataset.theme;
+      document.body.dataset.theme = selectedTheme;
+      if (document.getElementById('selectedTheme')) {
+        document.getElementById('selectedTheme').value = selectedTheme;
+      }
+      localStorage.setItem('theme', selectedTheme);
+    });
+  });
+
+  // ── Accent picker ──────────────────────────
+  document.querySelectorAll('.accent-opt').forEach(opt => {
+    opt.addEventListener('click', () => {
+      document.querySelectorAll('.accent-opt').forEach(o => o.classList.remove('active'));
+      opt.classList.add('active');
+      selectedAccent = opt.dataset.color;
+      document.documentElement.style.setProperty('--accent', selectedAccent);
+      if (document.getElementById('selectedAccent')) {
+        document.getElementById('selectedAccent').value = selectedAccent;
+      }
+      localStorage.setItem('accent', selectedAccent);
+    });
+  });
+
+  // ── Compact view toggle ────────────────────
+  document.getElementById('compactToggle')?.addEventListener('change', (e) => {
+    localStorage.setItem('compact_view', e.target.checked);
+    document.body.classList.toggle('compact-view', e.target.checked);
+  });
+
+  // ── Show completed toggle ──────────────────
+  document.getElementById('completedToggle')?.addEventListener('change', (e) => {
+    localStorage.setItem('show_completed', e.target.checked);
+  });
+
+  // ── Animations toggle ──────────────────────
+  document.getElementById('animToggle')?.addEventListener('change', (e) => {
+    localStorage.setItem('animations', e.target.checked);
+    document.body.classList.toggle('no-animations', !e.target.checked);
+  });
+
+  // ── Password strength ──────────────────────
+  const newPw = document.getElementById('newPw');
+  if (newPw) {
+    newPw.addEventListener('input', () => {
+      const v = newPw.value;
+      let score = 0;
+      if (v.length >= 8) score++;
+      if (/[A-Z]/.test(v)) score++;
+      if (/[0-9]/.test(v)) score++;
+      if (/[^A-Za-z0-9]/.test(v)) score++;
+      const fill = document.getElementById('pwFill');
+      const label = document.getElementById('pwLabel');
+      const colors = ['#ef4444', '#f59e0b', '#10b981', '#10b981'];
+      const labels = ['Too weak', 'Fair', 'Good', 'Strong'];
+      fill.style.width = (score / 4 * 100) + '%';
+      fill.style.background = colors[score - 1] || '#333';
+      label.textContent = score ? labels[score - 1] : 'Enter a password';
+    });
+  }
+
+  // ── Danger confirmations ───────────────────
+  document.getElementById('deleteAccountBtn')?.addEventListener('click', () => {
+    if (confirm('This will permanently delete your account. Are you absolutely sure?')) {
+      window.location.href = '/auth/delete';
+    }
+  });
+
+  document.getElementById('clearCompletedBtn')?.addEventListener('click', () => {
+    if (confirm('Clear all completed tasks?')) {
+      window.location.href = '/todos/clear-completed';
+    }
+  });
+</script>
+{% endblock %}

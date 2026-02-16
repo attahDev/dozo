@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}Create Account — DOZO{% endblock %}
+
+{% block content %}
+
+<div class="auth-wrapper">
+
+  <div class="auth-panel auth-panel-left">
+    <div class="auth-brand">
+      <div class="auth-logo">DZ</div>
+      <p class="auth-tagline">Your productivity, sorted.</p>
+    </div>
+    <div class="auth-art">
+      <div class="art-grid">
+        {% for i in range(25) %}
+        <div class="art-cell" style="--i: {{ i }}"></div>
+        {% endfor %}
+      </div>
+      <div class="art-ring ring-1"></div>
+      <div class="art-ring ring-2"></div>
+    </div>
+    <div class="auth-quote">
+      <span class="quote-mark">"</span>
+      <p>The secret of getting ahead is getting started.</p>
+      <cite>— Mark Twain</cite>
+    </div>
+  </div>
+
+  <div class="auth-panel auth-panel-right">
+    <div class="auth-form-wrap">
+
+      <div class="auth-header">
+        <h1 class="auth-title">Create account.</h1>
+        <p class="auth-sub">Free forever. No card required.</p>
+      </div>
+
+      <form class="auth-form" method="POST" action="{{ url_for('auth.register') }}" id="regForm" novalidate>
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+          <label class="form-label">Username</label>
+          <div class="input-wrap">
+            {{ form.username(class="form-input", placeholder="yourname", autocomplete="username") }}
+            <span class="input-focus-bar"></span>
+          </div>
+          {% if form.username.errors %}
+          <span class="form-error">{{ form.username.errors[0] }}</span>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <div class="input-wrap">
+            <span class="input-icon">@</span>
+            {{ form.email(class="form-input", placeholder="you@example.com", autocomplete="email") }}
+            <span class="input-focus-bar"></span>
+          </div>
+          {% if form.email.errors %}
+          <span class="form-error">{{ form.email.errors[0] }}</span>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <div class="input-wrap">
+            {{ form.password(class="form-input", id="regPassword", placeholder="Min. 8 characters", autocomplete="new-password") }}
+            <span class="input-focus-bar"></span>
+          </div>
+          <div class="pw-strength">
+            <div class="pw-bar"><div class="pw-fill" id="regPwFill"></div></div>
+            <span class="pw-label" id="regPwLabel">Enter a password</span>
+          </div>
+          {% if form.password.errors %}
+          <span class="form-error">{{ form.password.errors[0] }}</span>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Confirm Password</label>
+          <div class="input-wrap">
+            {{ form.confirm(class="form-input", placeholder="••••••••", autocomplete="new-password") }}
+            <span class="input-focus-bar"></span>
+          </div>
+          {% if form.confirm.errors %}
+          <span class="form-error">{{ form.confirm.errors[0] }}</span>
+          {% endif %}
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full">
+          <span>Create Account</span>
+          <span class="btn-icon">→</span>
+        </button>
+
+        <p class="auth-switch">
+          Already have an account?
+          <a href="{{ url_for('auth.login') }}" class="form-link">Sign in →</a>
+        </p>
+      </form>
+
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const pw = document.getElementById('regPassword');
+  if (pw) {
+    pw.addEventListener('input', () => {
+      const v = pw.value;
+      let score = 0;
+      if (v.length >= 8)        score++;
+      if (/[A-Z]/.test(v))      score++;
+      if (/[0-9]/.test(v))      score++;
+      if (/[^A-Za-z0-9]/.test(v)) score++;
+      const fill   = document.getElementById('regPwFill');
+      const label  = document.getElementById('regPwLabel');
+      const colors = ['#ef4444','#f59e0b','#10b981','#10b981'];
+      const labels = ['Too weak','Fair','Good','Strong ✓'];
+      fill.style.width      = (score / 4 * 100) + '%';
+      fill.style.background = colors[score - 1] || '#333';
+      label.textContent     = score ? labels[score - 1] : 'Enter a password';
+    });
+  }
+
+  document.querySelectorAll('.form-error').forEach(err => {
+    err.closest('.form-group').classList.add('has-error');
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}DOZO{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  {% block extra_css %}{% endblock %}
+
+  <!-- Load appearance BEFORE page renders (prevents flash) -->
+  <script>
+    (function() {
+      const theme = localStorage.getItem('theme') || 'dark';
+      const accent = localStorage.getItem('accent') || '#f59e0b';
+      document.documentElement.dataset.theme = theme;
+      document.documentElement.style.setProperty('--accent', accent);
+      if (localStorage.getItem('compact_view') === 'true') {
+        document.body.classList.add('compact-view');
+      }
+      if (localStorage.getItem('animations') === 'false') {
+        document.body.classList.add('no-animations');
+      }
+    })();
+  </script>
+</head>
+</head>
+<body>
+
+  <!-- Grain overlay -->
+  <div class="grain"></div>
+
+  <!-- Ambient background orbs -->
+  <div class="ambient">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="nav" id="nav">
+    <a href="{{ url_for('main.index') }}" class="nav-logo">
+      <span class="logo-mark">DZ</span>
+      <span class="logo-text">DOZO</span>
+    </a>
+
+    <div class="nav-links">
+      <a href="{{ url_for('main.index') }}" class="nav-link {% if request.endpoint == 'main.index' %}active{% endif %}">
+        <span class="link-dot"></span>Home
+      </a>
+      {% if current_user.is_authenticated %}
+      <a href="{{ url_for('todos.index') }}" class="nav-link {% if request.endpoint == 'todos.index' %}active{% endif %}">
+        <span class="link-dot"></span>Tasks
+      </a>
+      <a href="{{ url_for('auth.settings') }}" class="nav-link {% if request.endpoint == 'auth.settings' %}active{% endif %}">
+        <span class="link-dot"></span>Settings
+      </a>
+      <a href="{{ url_for('auth.logout') }}" class="nav-link nav-link-logout">
+        <span class="link-dot"></span>Log Out
+      </a>
+      {% else %}
+      <a href="{{ url_for('auth.login') }}" class="nav-btn">
+        Sign In <span class="btn-arrow">→</span>
+      </a>
+      {% endif %}
+    </div>
+
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+
+  <!-- Mobile menu -->
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="{{ url_for('main.index') }}" class="mobile-link">Home</a>
+    {% if current_user.is_authenticated %}
+    <a href="{{ url_for('todos.index') }}" class="mobile-link">Tasks</a>
+    <a href="{{ url_for('auth.settings') }}" class="mobile-link">Settings</a>
+    <a href="{{ url_for('auth.logout') }}" class="mobile-link">Log Out</a>
+    {% else %}
+    <a href="{{ url_for('auth.login') }}" class="mobile-link">Sign In</a>
+    {% endif %}
+  </div>
+
+  <!-- Flash messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="flash-container" id="flashContainer">
+    {% for category, message in messages %}
+    <div class="flash flash-{{ category }}">
+      <span>{{ message }}</span>
+      <button class="flash-close" onclick="this.parentElement.remove()">✕</button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% endwith %}
+
+  <!-- Main content -->
+  <main class="main">
+    {% block content %}{% endblock %}
+  </main>
+
+  <script src="{{ url_for('static', filename='js/main.js') }}" onerror="loadFallback()"></script>
+  {% block extra_js %}{% endblock %}
+  <script>
+    // Inline fallback — runs if main.js 404s (Windows static path issue)
+    function loadFallback() {
+      var t = document.getElementById('navToggle');
+      var m = document.getElementById('mobileMenu');
+      if (!t || !m) return;
+      t.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var open = m.classList.toggle('open');
+        var spans = t.querySelectorAll('span');
+        if (open) {
+          if (spans[0]) spans[0].style.transform = 'rotate(45deg) translate(5px,5px)';
+          if (spans[1]) { spans[1].style.opacity='0'; spans[1].style.transform='scaleX(0)'; }
+          if (spans[2]) spans[2].style.transform = 'rotate(-45deg) translate(5px,-5px)';
+        } else {
+          [].forEach.call(spans, function(s){ s.style.transform=''; s.style.opacity=''; });
+        }
+      });
+      document.addEventListener('click', function(e) {
+        if (!t.contains(e.target) && !m.contains(e.target)) {
+          m.classList.remove('open');
+          [].forEach.call(t.querySelectorAll('span'), function(s){ s.style.transform=''; s.style.opacity=''; });
+        }
+      });
+    }
+  </script>
+</body>
+</html>
