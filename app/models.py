@@ -38,7 +38,6 @@ class Todo(db.Model):
     created_at    = db.Column(db.DateTime, default=datetime.utcnow)
     user_id       = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
-    # prevent duplicate notification emails
     reminder_sent = db.Column(db.Boolean, default=False)
     overdue_sent  = db.Column(db.Boolean, default=False)
 

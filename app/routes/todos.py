@@ -9,7 +9,6 @@ todos_bp = Blueprint('todos', __name__)
 
 
 def _own(id):
-    """Fetch todo owned by current user or 404."""
     return Todo.query.filter_by(id=id, user_id=current_user.id).first_or_404()
 
 

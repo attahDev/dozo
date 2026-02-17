@@ -7,3 +7,4 @@ migrations/
 *.db
 .pytest_cache/
 .coverage
+dozo_dev.db

@@ -19,7 +19,6 @@ login.login_view             = 'auth.login'
 login.login_message          = 'Please sign in to continue.'
 login.login_message_category = 'warning'
 
-# Project root = parent of the app/ package — works on Windows and Linux
 _root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
@@ -29,7 +28,7 @@ def create_app(env: str = None) -> Flask:
         __name__,
         template_folder=os.path.join(_root, 'templates'),
         static_folder=os.path.join(_root, 'static'),
-        static_url_path='/static',          # explicit — avoids Windows path confusion
+        static_url_path='/static',         
     )
     app.config.from_object(configs[env])
 

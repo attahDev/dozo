@@ -1,4 +1,4 @@
-"""APScheduler background jobs — due reminders + daily digest."""
+
 import logging
 from datetime import date, datetime, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -20,7 +20,6 @@ def _check_reminders(app):
         today  = date.today()
         window = now + timedelta(minutes=mins)
 
-        # Due reminders — tasks due today, not yet notified
         due_soon = Todo.query.filter_by(completed=False, reminder_sent=False)\
                              .filter(Todo.due_date == today).all()
         for task in due_soon:
@@ -32,7 +31,6 @@ def _check_reminders(app):
             if user and send_reminder(user, task):
                 task.reminder_sent = True
 
-        # Overdue alerts — past due, not yet notified
         overdue = Todo.query.filter_by(completed=False, overdue_sent=False)\
                             .filter(Todo.due_date < today).all()
         for task in overdue:
